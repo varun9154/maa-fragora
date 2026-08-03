@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  --background: #090909;
+  --card: #151515;
+  --gold: #D4AF37;
+  --text: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: radial-gradient(circle at top, #1b1b1b 0%, #090909 60%);
+  color: white;
+  margin: 0;
+  overflow-x: hidden;
+  font-family: var(--font-inter);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-playfair);
+}
+
+button {
+  cursor: pointer;
+}
