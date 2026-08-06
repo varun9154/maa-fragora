@@ -1,29 +1,31 @@
-type Props = {
-  title: string;
-  image: string;
-};
+import { ReactNode } from "react";
+
+interface GlassCardProps {
+  children: ReactNode;
+  className?: string;
+}
 
 export default function GlassCard({
-  title,
-  image,
-}: Props) {
+  children,
+  className = "",
+}: GlassCardProps) {
   return (
-    <div className="group overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-lg transition-all duration-500 hover:border-[#D4AF37] hover:shadow-[0_0_40px_rgba(212,175,55,.25)]">
-
-      <img
-        src={image}
-        alt={title}
-        className="h-80 w-full object-cover transition duration-500 group-hover:scale-110"
-      />
-
-      <div className="p-6">
-
-        <h3 className="text-2xl font-bold">
-          {title}
-        </h3>
-
-      </div>
-
+    <div
+      className={`
+        rounded-3xl
+        border
+        border-white/10
+        bg-white/5
+        backdrop-blur-lg
+        shadow-xl
+        transition-all
+        duration-300
+        hover:border-[#D4AF37]
+        hover:shadow-[0_20px_50px_rgba(212,175,55,.15)]
+        ${className}
+      `}
+    >
+      {children}
     </div>
   );
 }

@@ -1,24 +1,19 @@
 export interface Product {
-  id: number;
-  slug: string;
-
+  _id: string;
   name: string;
-
+  slug: string;
   category: string;
-
   description: string;
-
-  image: string;
-
+  shortDescription: string;
+  images: string[];
   price: number;
-
-  oldPrice: number;
-
-  rating: number;
-
-  reviews: number;
-
+  oldPrice?: number;
   stock: number;
-
   featured: boolean;
+  rating: number;
+  reviews: number;
+  sku: string;
+  brand: string;
+  volume: string;
+  gender: "Men" | "Women" | "Unisex";
 }

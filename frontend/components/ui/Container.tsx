@@ -1,8 +1,10 @@
-type Props = {
+interface ContainerProps {
   children: React.ReactNode;
-};
+}
 
-export default function Container({ children }: Props) {
+export default function Container({
+  children,
+}: ContainerProps) {
   return (
     <div className="mx-auto max-w-7xl px-6">
       {children}

@@ -1,21 +1,25 @@
-type Props = {
+interface SectionTitleProps {
   title: string;
   subtitle?: string;
-};
+}
 
 export default function SectionTitle({
   title,
   subtitle,
-}: Props) {
+}: SectionTitleProps) {
   return (
-    <div className="mb-14 text-center">
-      <p className="tracking-[8px] uppercase text-[#D4AF37]">
-        {subtitle}
-      </p>
+    <div className="mb-12 text-center">
 
-      <h2 className="mt-3 text-5xl font-bold">
+      {subtitle && (
+        <p className="uppercase tracking-[6px] text-[#D4AF37]">
+          {subtitle}
+        </p>
+      )}
+
+      <h2 className="mt-4 text-5xl font-bold">
         {title}
       </h2>
+
     </div>
   );
 }

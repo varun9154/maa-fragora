@@ -1,61 +1,75 @@
+"use client";
+
+import { useState } from "react";
+
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 import SearchBar from "@/components/shop/SearchBar";
-import CategoryFilter from "@/components/shop/CategoryFilter";
-import SortDropdown from "@/components/shop/SortDropdown";
 import FilterSidebar from "@/components/shop/FilterSidebar";
 import ProductGrid from "@/components/shop/ProductGrid";
 
 export default function ShopPage() {
-  return (
-    <main className="min-h-screen bg-[#050505] text-white">
+  const [search, setSearch] = useState("");
 
+  const [category, setCategory] =
+    useState("All");
+
+  return (
+    <>
       <Navbar />
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
+      <main className="min-h-screen bg-[#050505] text-white">
 
-        <div className="text-center">
+        {/* Hero */}
 
-          <p className="tracking-[8px] uppercase text-[#D4AF37]">
-            MAA FRAGORA
-          </p>
+        <section className="border-b border-white/10 py-20">
 
-          <h1 className="mt-4 text-6xl font-bold">
-            Luxury Collection
-          </h1>
+          <div className="mx-auto max-w-7xl px-6">
 
-          <p className="mx-auto mt-6 max-w-3xl text-gray-400">
-            Explore our exclusive collection of premium fragrances
-            crafted for every occasion.
-          </p>
+            <h1 className="text-5xl font-bold">
+              Luxury Perfumes
+            </h1>
 
-        </div>
+            <p className="mt-4 max-w-2xl text-gray-400">
+              Discover premium fragrances crafted for elegance,
+              confidence and unforgettable moments.
+            </p>
 
-        <div className="mt-12">
-          <SearchBar />
-        </div>
+          </div>
 
-        <div className="mt-8">
-          <CategoryFilter />
-        </div>
+        </section>
 
-        <div className="mt-8 flex justify-end">
-          <SortDropdown />
-        </div>
+        {/* Search */}
 
-        <div className="mt-10 grid gap-10 lg:grid-cols-[280px_1fr]">
+        <section className="mx-auto max-w-7xl px-6 pt-10">
 
-          <FilterSidebar />
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+          />
 
-          <ProductGrid />
+        </section>
 
-        </div>
+        {/* Products */}
 
-      </section>
+        <section className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[260px_1fr]">
+
+          <FilterSidebar
+            selectedCategory={category}
+            onCategoryChange={setCategory}
+          />
+
+          <ProductGrid
+            search={search}
+            category={category}
+          />
+
+        </section>
+
+      </main>
 
       <Footer />
-
-    </main>
+    </>
   );
 }

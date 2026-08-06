@@ -1,20 +1,35 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
+
 import "./globals.css";
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
-});
+import Providers from "@/components/providers/Providers";
 
-const inter = Inter({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "MAA Fragora",
-  description: "Luxury Within Reach",
+  title: {
+    default: "MAA Fragora",
+    template: "%s | MAA Fragora",
+  },
+  description:
+    "Discover luxury perfumes from MAA Fragora. Premium fragrances crafted for every occasion.",
+  keywords: [
+    "Perfume",
+    "Luxury Perfume",
+    "MAA Fragora",
+    "Fragrance",
+    "Men Perfume",
+    "Women Perfume",
+  ],
+  authors: [{ name: "Varun Kumar" }],
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -24,8 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${inter.variable}`}>
-        {children}
+      <body
+        className={`${poppins.className} bg-[#050505] text-white antialiased`}
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
