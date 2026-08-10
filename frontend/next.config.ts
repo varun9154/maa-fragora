@@ -13,6 +13,15 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "https://maa-fragora.onrender.com/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
