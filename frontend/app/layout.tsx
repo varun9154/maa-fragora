@@ -1,32 +1,30 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
-
 import "./globals.css";
 
 import Providers from "@/components/providers/Providers";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: {
-    default: "MAA Fragora",
-    template: "%s | MAA Fragora",
-  },
+  title: "MAA Fragora | Luxury Perfumes",
+
   description:
-    "Discover luxury perfumes from MAA Fragora. Premium fragrances crafted for every occasion.",
+    "Experience luxury perfumes crafted for confidence, elegance and unforgettable impressions.",
+
   keywords: [
     "Perfume",
     "Luxury Perfume",
-    "MAA Fragora",
     "Fragrance",
-    "Men Perfume",
-    "Women Perfume",
+    "Maa Fragora",
+    "Eau De Parfum",
+    "Premium Perfumes",
   ],
-  authors: [{ name: "Varun Kumar" }],
+
+  authors: [
+    {
+      name: "Varun Kumar",
+    },
+  ],
+
   icons: {
     icon: "/favicon.ico",
   },
@@ -39,10 +37,44 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${poppins.className} bg-[#050505] text-white antialiased`}
-      >
-        <Providers>{children}</Providers>
+      <body className="bg-[#050505] text-white antialiased">
+        <Providers>
+          {children}
+
+          <Toaster
+            position="top-right"
+            reverseOrder={false}
+            toastOptions={{
+              duration: 3000,
+
+              style: {
+                background: "#111111",
+                color: "#ffffff",
+                border: "1px solid #D4AF37",
+                borderRadius: "14px",
+                padding: "14px 18px",
+                fontSize: "14px",
+                fontWeight: "500",
+                boxShadow:
+                  "0 15px 40px rgba(0, 0, 0, 0.45)",
+              },
+
+              success: {
+                iconTheme: {
+                  primary: "#D4AF37",
+                  secondary: "#000000",
+                },
+              },
+
+              error: {
+                iconTheme: {
+                  primary: "#ef4444",
+                  secondary: "#ffffff",
+                },
+              },
+            }}
+          />
+        </Providers>
       </body>
     </html>
   );

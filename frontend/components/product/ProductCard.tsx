@@ -1,51 +1,343 @@
-import Image from "next/image";
-import { Heart, ShoppingCart, Star } from "lucide-react";
-import Button from "@/components/ui/Button";
+"use client";
 
-type ProductCardProps = {
+import Image from "next/image";
+import Link from "next/link";
+
+import {
+  Heart,
+  ShoppingCart,
+  Star,
+} from "lucide-react";
+
+import toast from "react-hot-toast";
+
+import useCart from "@/hooks/useCart";
+import useWishlist from "@/hooks/useWishlist";
+
+import { useCartStore } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+
+interface ProductCardProps {
+  id: string;
+  slug: string;
   name: string;
-  image: string;
+  category: string;
+  description: string;
+  images: string[];
   price: number;
-  oldPrice: number;
-};
+  oldPrice?: number;
+  rating: number;
+  reviews: number;
+  stock: number;
+}
 
 export default function ProductCard({
+  id,
+  slug,
   name,
-  image,
+  category,
+  description,
+  images,
   price,
   oldPrice,
+  rating,
+  reviews,
+  stock,
 }: ProductCardProps) {
+  const discount = oldPrice
+    ? Math.round(
+        ((oldPrice - price) / oldPrice) * 100
+      )
+    : 0;
+
+  const {
+    addMutation,
+  } = useCart();
+
+  const {
+    addMutation: addWishlistMutation,
+    removeMutation,
+  } = useWishlist();
+
+  const addToCartStore =
+    useCartStore(
+      (state) => state.addToCart
+    );
+
+  const {
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+  } = useWishlistStore();
+
+  const favourite =
+    isInWishlist(id);
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADD TO CART
+  |--------------------------------------------------------------------------
+  */
+
+  const handleCart = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (stock <= 0) {
+      toast.error(
+        "This product is currently out of stock."
+      );
+
+      return;
+    }
+
+    /*
+     * Prevent duplicate clicks
+     */
+
+    if (addMutation.isPending) {
+      return;
+    }
+
+    try {
+      /*
+       * Backend first
+       */
+
+      await addMutation.mutateAsync({
+        productId: id,
+        quantity: 1,
+      });
+
+      /*
+       * Update local cart only after
+       * backend succeeds
+       */
+
+      addToCartStore({
+        id,
+        slug,
+        name,
+        image:
+          images?.[0] ||
+          "/images/placeholder.jpg",
+        price,
+        quantity: 1,
+      });
+
+      /*
+       * SUCCESS POPUP
+       */
+
+      toast.success(
+        `${name} added to cart`
+      );
+    } catch (error: any) {
+      console.error(
+        "Add To Cart Error:",
+        error
+      );
+
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to add product to cart.";
+
+      /*
+       * ERROR POPUP
+       */
+
+      if (
+        message
+          .toLowerCase()
+          .includes("token") ||
+        message
+          .toLowerCase()
+          .includes("login") ||
+        message
+          .toLowerCase()
+          .includes("access denied")
+      ) {
+        toast.error(
+          "Please login to add products to your cart."
+        );
+
+        sessionStorage.setItem(
+          "redirectAfterLogin",
+          window.location.pathname
+        );
+
+        return;
+      }
+
+      toast.error(message);
+    }
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | WISHLIST
+  |--------------------------------------------------------------------------
+  */
+
+  const handleWishlist = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (favourite) {
+      removeFromWishlist(id);
+
+      try {
+        await removeMutation.mutateAsync(
+          id
+        );
+
+        toast.success(
+          `${name} removed from wishlist`
+        );
+      } catch (error: any) {
+        console.error(
+          "Remove Wishlist Error:",
+          error
+        );
+
+        toast.error(
+          error?.response?.data?.message ||
+            "Unable to remove from wishlist."
+        );
+      }
+
+      return;
+    }
+
+    addToWishlist({
+      id,
+      slug,
+      name,
+      image:
+        images?.[0] ||
+        "/images/placeholder.jpg",
+      price,
+    });
+
+    try {
+      await addWishlistMutation.mutateAsync(
+        id
+      );
+
+      toast.success(
+        `${name} added to wishlist`
+      );
+    } catch (error: any) {
+      console.error(
+        "Add Wishlist Error:",
+        error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to add to wishlist."
+      );
+    }
+  };
+
   return (
-    <div className="group overflow-hidden rounded-3xl border border-white/10 bg-[#111] transition duration-500 hover:border-[#D4AF37] hover:shadow-[0_0_40px_rgba(212,175,55,.25)]">
-      <div className="relative overflow-hidden">
+    <div className="group overflow-hidden rounded-3xl border border-white/10 bg-[#111111] transition-all duration-500 hover:-translate-y-2 hover:border-[#D4AF37] hover:shadow-[0_20px_60px_rgba(212,175,55,.15)]">
 
-        <Image
-          src={image}
-          alt={name}
-          width={500}
-          height={500}
-          className="h-80 w-full object-cover transition duration-500 group-hover:scale-110"
-        />
+      {/* =====================================================
+          PRODUCT IMAGE
+      ===================================================== */}
 
-        <button className="absolute right-4 top-4 rounded-full bg-black/60 p-2 backdrop-blur">
-          <Heart size={18} />
-        </button>
+      <Link
+        href={`/product/${slug}`}
+      >
+        <div className="relative h-80 bg-[#181818]">
 
-      </div>
+          <Image
+            src={
+              images?.[0] ||
+              "/images/placeholder.jpg"
+            }
+            alt={name}
+            fill
+            sizes="(max-width:768px)100vw,(max-width:1200px)50vw,33vw"
+            className="object-contain p-6 transition duration-700 group-hover:scale-110"
+          />
 
-      <div className="space-y-3 p-6">
+          {oldPrice && (
+            <span className="absolute left-4 top-4 rounded-full bg-[#D4AF37] px-3 py-1 text-xs font-bold text-black">
+              {discount}% OFF
+            </span>
+          )}
 
-        <h3 className="text-2xl font-bold">{name}</h3>
+          {/* WISHLIST */}
 
-        <div className="flex text-[#D4AF37] gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-              key={star}
-              size={18}
-              fill="currentColor"
+          <button
+            type="button"
+            onClick={handleWishlist}
+            className="absolute right-4 top-4 rounded-full bg-black/60 p-2 backdrop-blur transition hover:scale-110"
+            aria-label="Add to wishlist"
+          >
+            <Heart
+              size={20}
+              className={
+                favourite
+                  ? "fill-red-500 text-red-500"
+                  : "text-white"
+              }
             />
-          ))}
+          </button>
+
         </div>
+      </Link>
+
+      {/* =====================================================
+          DETAILS
+      ===================================================== */}
+
+      <div className="space-y-4 p-6">
+
+        <p className="text-xs uppercase tracking-[5px] text-[#D4AF37]">
+          {category}
+        </p>
+
+        <Link
+          href={`/product/${slug}`}
+        >
+          <h2 className="text-2xl font-bold transition hover:text-[#D4AF37]">
+            {name}
+          </h2>
+        </Link>
+
+        <p className="line-clamp-2 text-sm text-gray-400">
+          {description}
+        </p>
+
+        {/* RATING */}
+
+        <div className="flex items-center gap-2">
+
+          <Star
+            size={18}
+            fill="currentColor"
+            className="text-[#D4AF37]"
+          />
+
+          <span>
+            {rating}
+          </span>
+
+          <span className="text-gray-500">
+            ({reviews})
+          </span>
+
+        </div>
+
+        {/* PRICE */}
 
         <div className="flex items-center gap-3">
 
@@ -53,25 +345,75 @@ export default function ProductCard({
             ₹{price}
           </span>
 
-          <span className="text-gray-500 line-through">
-            ₹{oldPrice}
-          </span>
+          {oldPrice && (
+            <span className="text-gray-500 line-through">
+              ₹{oldPrice}
+            </span>
+          )}
 
         </div>
 
-        <div className="flex gap-3">
+        {/* STOCK */}
 
-          <Button>
-            Add to Cart
-          </Button>
+        <div className="text-sm">
 
-          <button className="rounded-full border border-[#D4AF37] p-3 transition hover:bg-[#D4AF37] hover:text-black">
-            <ShoppingCart size={20} />
+          {stock > 0 ? (
+            <span className="text-green-500">
+              In Stock
+            </span>
+          ) : (
+            <span className="text-red-500">
+              Out of Stock
+            </span>
+          )}
+
+        </div>
+
+        {/* BUTTONS */}
+
+        <div className="flex gap-3 pt-2">
+
+          <button
+            type="button"
+            onClick={handleCart}
+            disabled={
+              stock === 0 ||
+              addMutation.isPending
+            }
+            className={`flex flex-1 items-center justify-center gap-2 rounded-full py-3 font-semibold transition duration-300 ${
+              stock > 0 &&
+              !addMutation.isPending
+                ? "bg-[#D4AF37] text-black hover:scale-105"
+                : "cursor-not-allowed bg-gray-700 text-gray-400"
+            }`}
+          >
+
+            <ShoppingCart
+              size={18}
+            />
+
+            {addMutation.isPending
+              ? "Adding..."
+              : "Add To Cart"}
+
           </button>
+
+          <Link
+            href={`/product/${slug}`}
+            className="flex-1"
+          >
+            <button
+              type="button"
+              className="w-full rounded-full border border-[#D4AF37] py-3 font-semibold text-[#D4AF37] transition duration-300 hover:bg-[#D4AF37] hover:text-black"
+            >
+              View
+            </button>
+          </Link>
 
         </div>
 
       </div>
+
     </div>
   );
 }

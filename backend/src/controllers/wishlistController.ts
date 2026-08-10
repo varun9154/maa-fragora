@@ -1,6 +1,6 @@
 import { Response } from "express";
 import Wishlist from "../models/Wishlist";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest } from "../middlewares/authMiddleware";
 
 /*
 -----------------------------------------

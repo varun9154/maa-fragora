@@ -1,20 +1,24 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { getOrders, placeOrder } from "@/services/orderService";
+import { useQuery } from "@tanstack/react-query";
 
-export default function useOrder() {
-  const ordersQuery = useQuery({
-    queryKey: ["orders"],
-    queryFn: getOrders,
-  });
+import { getOrderById } from "@/services/orderService";
 
-  const placeOrderMutation = useMutation({
-    mutationFn: placeOrder,
+export default function useOrder(
+  id?: string
+) {
+  const orderQuery = useQuery({
+    queryKey: ["order", id],
+
+    queryFn: () =>
+      getOrderById(
+        id as string
+      ),
+
+    enabled: Boolean(id),
   });
 
   return {
-    ordersQuery,
-    placeOrderMutation,
+    orderQuery,
   };
 }

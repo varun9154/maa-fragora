@@ -11,6 +11,7 @@ export interface CartItem {
 }
 
 interface CartStore {
+  cart: any;
   items: CartItem[];
 
   setCart: (items: CartItem[]) => void;
@@ -34,10 +35,12 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      cart: null,
 
       setCart: (items) =>
         set({
           items,
+          cart: items,
         }),
 
       addToCart: (item) =>

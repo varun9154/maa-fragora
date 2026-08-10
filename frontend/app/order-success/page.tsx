@@ -1,112 +1,65 @@
-import Link from "next/link";
-import { CheckCircle2, ShoppingBag } from "lucide-react";
+"use client";
 
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import Link from "next/link";
+import { CheckCircle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 export default function OrderSuccessPage() {
+  const searchParams =
+    useSearchParams();
+
+  const orderId =
+    searchParams.get("orderId");
+
   return (
-    <>
-      <Navbar />
+    <main className="flex min-h-screen items-center justify-center bg-[#050505] px-6 text-white">
 
-      <main className="min-h-screen bg-[#050505] text-white">
+      <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-[#111111] p-10 text-center">
 
-        <section className="mx-auto flex max-w-4xl flex-col items-center px-6 py-24 text-center">
+        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-green-500/10">
+          <CheckCircle
+            size={60}
+            className="text-green-500"
+          />
+        </div>
 
-          <div className="rounded-full bg-green-500/20 p-6">
+        <p className="mt-8 uppercase tracking-[5px] text-[#D4AF37]">
+          MAA Fragora
+        </p>
 
-            <CheckCircle2
-              size={90}
-              className="text-green-400"
-            />
+        <h1 className="mt-4 text-4xl font-bold">
+          Order Confirmed
+        </h1>
 
-          </div>
+        <p className="mt-4 leading-7 text-gray-400">
+          Thank you for shopping with
+          MAA Fragora. Your order has
+          been successfully placed.
+        </p>
 
-          <h1 className="mt-10 text-5xl font-bold">
-            Order Placed Successfully!
-          </h1>
+        {orderId && (
+          <div className="mt-8 rounded-2xl bg-[#181818] p-5">
 
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-400">
-            Thank you for shopping with
-            <span className="font-semibold text-[#D4AF37]">
-              {" "}MAA Fragora
-            </span>.
-            Your luxury fragrance order has been received and is being prepared for dispatch.
-          </p>
+            <p className="text-sm text-gray-500">
+              Order ID
+            </p>
 
-          <div className="mt-14 grid w-full gap-6 md:grid-cols-3">
-
-            <div className="rounded-2xl border border-white/10 bg-[#111] p-6">
-
-              <h3 className="text-xl font-semibold">
-                Order Status
-              </h3>
-
-              <p className="mt-3 text-green-400">
-                Confirmed
-              </p>
-
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-[#111] p-6">
-
-              <h3 className="text-xl font-semibold">
-                Payment
-              </h3>
-
-              <p className="mt-3 text-[#D4AF37]">
-                Pending / COD
-              </p>
-
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-[#111] p-6">
-
-              <h3 className="text-xl font-semibold">
-                Delivery
-              </h3>
-
-              <p className="mt-3 text-blue-400">
-                3–5 Business Days
-              </p>
-
-            </div>
+            <p className="mt-2 break-all font-mono text-sm text-[#D4AF37]">
+              {orderId}
+            </p>
 
           </div>
+        )}
 
-          <div className="mt-16 flex flex-col gap-5 sm:flex-row">
+        <Link
+          href="/shop"
+          className="mt-8 inline-block rounded-full bg-[#D4AF37] px-8 py-4 font-bold text-black transition hover:scale-105"
+        >
+          Continue Shopping
+        </Link>
 
-            <Link
-              href="/orders"
-              className="rounded-full bg-[#D4AF37] px-10 py-4 font-bold text-black transition hover:scale-105"
-            >
-              View My Orders
-            </Link>
+      </div>
 
-            <Link
-              href="/shop"
-              className="rounded-full border border-[#D4AF37] px-10 py-4 font-bold text-[#D4AF37] transition hover:bg-[#D4AF37] hover:text-black"
-            >
-              Continue Shopping
-            </Link>
-
-          </div>
-
-          <div className="mt-20 flex items-center gap-3 text-gray-400">
-
-            <ShoppingBag size={20} />
-
-            <span>
-              Thank you for choosing MAA Fragora.
-            </span>
-
-          </div>
-
-        </section>
-
-      </main>
-
-      <Footer />
-    </>
+    </main>
   );
 }

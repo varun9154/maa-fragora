@@ -6,7 +6,7 @@ import {
   removeWishlistItem,
 } from "../controllers/wishlistController";
 
-import { protect } from "../middleware/authMiddleware";
+import { protect } from "../middlewares/authMiddleware";
 
 const router = Router();
 

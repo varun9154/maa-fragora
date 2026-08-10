@@ -1,25 +1,83 @@
 import { Router } from "express";
 
 import {
-  addToCart,
-  clearCart,
   getCart,
+  addToCart,
+  updateCart,
   removeCartItem,
-  updateCartItem,
+  clearCart,
 } from "../controllers/cartController";
 
-import { protect } from "../middleware/authMiddleware";
+import { protect } from "../middlewares/authMiddleware";
 
 const router = Router();
 
-router.get("/", protect, getCart);
+/*
+|--------------------------------------------------------------------------
+| CART ROUTES
+|--------------------------------------------------------------------------
+| Every cart operation belongs to a logged-in user.
+|--------------------------------------------------------------------------
+*/
 
-router.post("/", protect, addToCart);
+/*
+|--------------------------------------------------------------------------
+| GET CART
+|--------------------------------------------------------------------------
+*/
 
-router.put("/:productId", protect, updateCartItem);
+router.get(
+  "/",
+  protect,
+  getCart
+);
 
-router.delete("/:productId", protect, removeCartItem);
+/*
+|--------------------------------------------------------------------------
+| ADD TO CART
+|--------------------------------------------------------------------------
+*/
 
-router.delete("/", protect, clearCart);
+router.post(
+  "/",
+  protect,
+  addToCart
+);
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE CART ITEM
+|--------------------------------------------------------------------------
+*/
+
+router.put(
+  "/:productId",
+  protect,
+  updateCart
+);
+
+/*
+|--------------------------------------------------------------------------
+| REMOVE CART ITEM
+|--------------------------------------------------------------------------
+*/
+
+router.delete(
+  "/:productId",
+  protect,
+  removeCartItem
+);
+
+/*
+|--------------------------------------------------------------------------
+| CLEAR CART
+|--------------------------------------------------------------------------
+*/
+
+router.delete(
+  "/",
+  protect,
+  clearCart
+);
 
 export default router;

@@ -9,12 +9,20 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import useOrder from "@/hooks/useOrder";
+import useOrders from "@/hooks/useOrders";
 import { useCartStore } from "@/store/cartStore";
 import useHydration from "@/hooks/useHydration";
 
 interface OrderSummaryProps {
   shipping?: number;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
 }
 
 export default function OrderSummary({
@@ -24,27 +32,52 @@ export default function OrderSummary({
 
   const hydrated = useHydration();
 
-  const items = useCartStore((state) => state.items);
-  const clearCart = useCartStore((state) => state.clearCart);
+  /*
+   * Order mutation
+   */
+  const { placeOrderMutation } =
+    useOrders();
 
-  const { placeOrderMutation } = useOrder();
+  /*
+   * Cart
+   */
+  const rawItems = useCartStore(
+    (state) => state.items
+  );
 
-  const [loading, setLoading] = useState(false);
+  const clearCart = useCartStore(
+    (state) => state.clearCart
+  );
 
-  // Prevent hydration mismatch
+  /*
+   * Make sure cart is always an array
+   */
+  const items: CartItem[] = Array.isArray(
+    rawItems
+  )
+    ? (rawItems as CartItem[])
+    : [];
+
+  const [loading, setLoading] =
+    useState(false);
+
+  /* ==========================================================
+     HYDRATION
+  ========================================================== */
+
   if (!hydrated) {
     return (
-      <div className="sticky top-28 rounded-3xl border border-white/10 bg-[#111111] p-8 animate-pulse">
+      <div className="rounded-3xl border border-white/10 bg-[#111111] p-8 text-white">
 
-        <div className="mb-8 h-8 w-56 rounded bg-gray-800" />
+        <div className="mb-8 h-8 w-56 animate-pulse rounded bg-gray-800" />
 
         <div className="space-y-5">
 
-          <div className="h-16 rounded bg-gray-800" />
+          <div className="h-16 animate-pulse rounded bg-gray-800" />
 
-          <div className="h-16 rounded bg-gray-800" />
+          <div className="h-16 animate-pulse rounded bg-gray-800" />
 
-          <div className="h-16 rounded bg-gray-800" />
+          <div className="h-16 animate-pulse rounded bg-gray-800" />
 
         </div>
 
@@ -52,55 +85,224 @@ export default function OrderSummary({
     );
   }
 
+  /* ==========================================================
+     TOTAL ITEMS
+  ========================================================== */
+
   const totalItems = items.reduce(
-    (sum, item) => sum + item.quantity,
+    (
+      sum: number,
+      item: CartItem
+    ): number => {
+      return (
+        sum +
+        Number(item.quantity)
+      );
+    },
     0
   );
+
+  /* ==========================================================
+     SUBTOTAL
+  ========================================================== */
 
   const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (
+      sum: number,
+      item: CartItem
+    ): number => {
+      return (
+        sum +
+        Number(item.price) *
+          Number(item.quantity)
+      );
+    },
     0
   );
 
-  const discount = subtotal >= 3000 ? 200 : 0;
+  /* ==========================================================
+     DISCOUNT
+  ========================================================== */
+
+  const discount =
+    subtotal >= 3000 ? 200 : 0;
+
+  /* ==========================================================
+     GRAND TOTAL
+  ========================================================== */
 
   const grandTotal =
-    subtotal + shipping - discount;
+    subtotal +
+    Number(shipping) -
+    discount;
 
-  const handlePlaceOrder = async () => {
-    if (items.length === 0) {
-      alert("Your cart is empty.");
-      return;
-    }
+  /* ==========================================================
+     PLACE ORDER
+  ========================================================== */
 
-    setLoading(true);
+  const handlePlaceOrder =
+    async (): Promise<void> => {
+      if (items.length === 0) {
+        alert(
+          "Your cart is empty."
+        );
 
-    try {
-      await placeOrderMutation.mutateAsync({
-        shippingAddress: {
-          fullName: "Customer",
-          phone: "9999999999",
-          address: "Address",
-          city: "City",
-          state: "State",
-          pincode: "000000",
-        },
-        paymentMethod: "COD",
-      });
+        return;
+      }
 
-      clearCart();
+      setLoading(true);
 
-      router.push("/order-success");
-    } catch (error) {
-      console.error(error);
-      alert("Unable to place order.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        /*
+         * Convert cart items into
+         * backend order items.
+         */
+        const orderItems = items.map(
+          (item: CartItem) => ({
+            productId: item.id,
+            name: item.name,
+            image: item.image,
+            quantity: Number(
+              item.quantity
+            ),
+            price: Number(
+              item.price
+            ),
+          })
+        );
+
+        /*
+         * IMPORTANT:
+         *
+         * DO NOT SEND userId HERE.
+         *
+         * Backend gets userId from
+         * authentication middleware.
+         */
+        const response =
+          await placeOrderMutation.mutateAsync(
+            {
+              items: orderItems,
+
+              totalAmount:
+                grandTotal,
+
+              shippingAddress: {
+                fullName:
+                  "Customer",
+
+                phone:
+                  "9999999999",
+
+                address:
+                  "Address",
+
+                city:
+                  "City",
+
+                state:
+                  "State",
+
+                pincode:
+                  "000000",
+              },
+
+              paymentMethod:
+                "COD",
+            }
+          );
+
+        /*
+         * Check response
+         */
+        if (
+          !response ||
+          response.success !== true
+        ) {
+          throw new Error(
+            response?.message ||
+              "Unable to place order"
+          );
+        }
+
+        /*
+         * Clear local cart
+         */
+        clearCart();
+
+        /*
+         * Order ID
+         */
+        const orderId =
+          response?.order?._id;
+
+        /*
+         * Redirect
+         */
+        if (orderId) {
+          router.push(
+            `/order-success?orderId=${orderId}`
+          );
+        } else {
+          router.push(
+            "/order-success"
+          );
+        }
+      } catch (error: unknown) {
+        console.error(
+          "Place Order Error:",
+          error
+        );
+
+        let message =
+          "Unable to place order.";
+
+        if (
+          error instanceof Error
+        ) {
+          message =
+            error.message;
+        }
+
+        /*
+         * Axios error response
+         */
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error
+        ) {
+          const axiosError =
+            error as {
+              response?: {
+                data?: {
+                  message?: string;
+                };
+              };
+            };
+
+          message =
+            axiosError.response?.data
+              ?.message ||
+            message;
+        }
+
+        alert(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* ==========================================================
+     UI
+  ========================================================== */
 
   return (
-    <div className="sticky top-28 rounded-3xl border border-white/10 bg-[#111111] p-8">
+    <div className="rounded-3xl border border-white/10 bg-[#111111] p-8 text-white">
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="mb-8 flex items-center gap-3">
 
@@ -115,6 +317,10 @@ export default function OrderSummary({
 
       </div>
 
+      {/* =====================================================
+          CART ITEMS
+      ===================================================== */}
+
       <div className="space-y-5">
 
         {items.length === 0 && (
@@ -123,33 +329,69 @@ export default function OrderSummary({
           </p>
         )}
 
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between border-b border-white/10 pb-4"
-          >
-            <div>
+        {items.map(
+          (item: CartItem) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between border-b border-white/10 pb-4"
+            >
 
-              <h3 className="font-semibold">
-                {item.name}
-              </h3>
+              <div className="flex items-center gap-4">
 
-              <p className="text-sm text-gray-400">
-                Qty: {item.quantity}
-              </p>
+                {/* PRODUCT IMAGE */}
+
+                <div className="h-16 w-16 overflow-hidden rounded-xl bg-[#181818]">
+
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="h-full w-full object-contain p-2"
+                  />
+
+                </div>
+
+                {/* PRODUCT INFO */}
+
+                <div>
+
+                  <h3 className="font-semibold">
+                    {item.name}
+                  </h3>
+
+                  <p className="text-sm text-gray-400">
+                    Qty:{" "}
+                    {item.quantity}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* PRICE */}
+
+              <span className="font-semibold text-[#D4AF37]">
+                ₹
+                {Number(
+                  item.price
+                ) *
+                  Number(
+                    item.quantity
+                  )}
+              </span>
 
             </div>
-
-            <span className="font-semibold text-[#D4AF37]">
-              ₹{item.price * item.quantity}
-            </span>
-
-          </div>
-        ))}
+          )
+        )}
 
       </div>
 
+      {/* =====================================================
+          TOTALS
+      ===================================================== */}
+
       <div className="mt-8 space-y-5">
+
+        {/* TOTAL ITEMS */}
 
         <div className="flex justify-between">
 
@@ -157,9 +399,13 @@ export default function OrderSummary({
             Total Items
           </span>
 
-          <span>{totalItems}</span>
+          <span>
+            {totalItems}
+          </span>
 
         </div>
+
+        {/* SUBTOTAL */}
 
         <div className="flex justify-between">
 
@@ -167,9 +413,13 @@ export default function OrderSummary({
             Subtotal
           </span>
 
-          <span>₹{subtotal}</span>
+          <span>
+            ₹{subtotal}
+          </span>
 
         </div>
+
+        {/* SHIPPING */}
 
         <div className="flex justify-between">
 
@@ -191,6 +441,8 @@ export default function OrderSummary({
 
         </div>
 
+        {/* DISCOUNT */}
+
         <div className="flex justify-between">
 
           <div className="flex items-center gap-2">
@@ -209,11 +461,15 @@ export default function OrderSummary({
 
         </div>
 
+        {/* GRAND TOTAL */}
+
         <div className="border-t border-white/10 pt-6">
 
           <div className="flex justify-between text-2xl font-bold">
 
-            <span>Total</span>
+            <span>
+              Total
+            </span>
 
             <span className="text-[#D4AF37]">
               ₹{grandTotal}
@@ -225,11 +481,20 @@ export default function OrderSummary({
 
       </div>
 
+      {/* =====================================================
+          PLACE ORDER BUTTON
+      ===================================================== */}
+
       <button
+        type="button"
         onClick={handlePlaceOrder}
-        disabled={loading || items.length === 0}
+        disabled={
+          loading ||
+          items.length === 0
+        }
         className={`mt-8 w-full rounded-full py-4 text-lg font-bold transition duration-300 ${
-          loading || items.length === 0
+          loading ||
+          items.length === 0
             ? "cursor-not-allowed bg-gray-700 text-gray-400"
             : "bg-[#D4AF37] text-black hover:scale-105"
         }`}
@@ -238,6 +503,10 @@ export default function OrderSummary({
           ? "Placing Order..."
           : "Place Order"}
       </button>
+
+      {/* =====================================================
+          SECURITY
+      ===================================================== */}
 
       <div className="mt-6 flex items-center justify-center gap-2 text-sm text-green-400">
 

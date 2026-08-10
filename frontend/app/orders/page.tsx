@@ -3,7 +3,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-import useOrder from "@/hooks/useOrder";
+import useOrder from "@/hooks/useOrders";
 
 export default function OrdersPage() {
 

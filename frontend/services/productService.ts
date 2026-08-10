@@ -1,11 +1,25 @@
 import api from "@/lib/api";
 
-export const getProducts = async () => {
-  const response = await api.get("/products");
-  return response.data;
-};
+export async function getProducts(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  featured?: boolean;
+}) {
+  const response = await api.get("/products", {
+    params,
+  });
 
-export const getProduct = async (slug: string) => {
-  const response = await api.get(`/products/${slug}`);
   return response.data;
-};
+}
+
+export async function getProductBySlug(
+  slug: string
+) {
+  const response = await api.get(
+    `/products/${slug}`
+  );
+
+  return response.data;
+}
