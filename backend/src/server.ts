@@ -3,13 +3,17 @@ import { connectDatabase } from "./config/database";
 import { env } from "./config/env";
 
 async function startServer() {
-  await connectDatabase();
+  try {
+    await connectDatabase();
 
-  app.listen(env.PORT, () => {
-    console.log(
-      `🚀 Server running on http://localhost:${env.PORT}`
-    );
-  });
+    const port = Number(process.env.PORT ?? env.PORT ?? 5000);
+
+    app.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+    });
+  } catch (error) {
+    console.error("❌ Server startup failed:", error);
+  }
 }
 
 startServer();

@@ -2,104 +2,92 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import cookieParser from "cookie-parser";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 
-import productRoutes from "./routes/productRoutes";
 import authRoutes from "./routes/authRoutes";
-import orderRoutes from "./routes/orderRoutes";
+import productRoutes from "./routes/productRoutes";
 import cartRoutes from "./routes/cartRoutes";
-import uploadRoutes from "./routes/uploadRoutes";
-import dashboardRoutes from "./routes/dashboardRoutes";
-import customerRoutes from "./routes/customerRoutes";
+import wishlistRoutes from "./routes/wishlistRoutes";
+import orderRoutes from "./routes/orderRoutes";
 
 const app = express();
 
-/* ==========================================================
-   MIDDLEWARE
-========================================================== */
+/* ======================================================
+   CORS CONFIGURATION
+====================================================== */
+
+const allowedOrigins: string[] = [
+  "http://localhost:3000",
+  "https://maa-fragora.vercel.app",
+  process.env.FRONTEND_URL,
+].filter((origin): origin is string => Boolean(origin));
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://maa-fragora.vercel.app",
-      process.env.FRONTEND_URL || "",
-    ],
+    origin: allowedOrigins,
     credentials: true,
   })
 );
+
+/* ======================================================
+   SECURITY & GENERAL MIDDLEWARE
+====================================================== */
 
 app.use(helmet());
 
 app.use(compression());
 
-app.use(cookieParser());
-
 app.use(morgan("dev"));
 
 app.use(express.json());
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
+app.use(express.urlencoded({ extended: true }));
 
-/* ==========================================================
-   HEALTH CHECK
-========================================================== */
+app.use(cookieParser());
 
-app.get("/", (req, res) => {
+/* ======================================================
+   ROOT ROUTE
+====================================================== */
+
+app.get("/", (_req, res) => {
   res.status(200).json({
     success: true,
-    message:
-      "🚀 MAA Fragora Backend Running Successfully",
+    message: "🚀 Maa Fragora Backend API Running Successfully",
+    version: "1.0.0",
   });
 });
 
-/* ==========================================================
+/* ======================================================
+   HEALTH CHECK
+====================================================== */
+
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "OK",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/* ======================================================
    API ROUTES
-========================================================== */
+====================================================== */
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
+app.use("/api/auth", authRoutes);
 
-app.use(
-  "/api/products",
-  productRoutes
-);
+app.use("/api/products", productRoutes);
 
-app.use(
-  "/api/cart",
-  cartRoutes
-);
+app.use("/api/cart", cartRoutes);
 
-app.use(
-  "/api/orders",
-  orderRoutes
-);
+app.use("/api/wishlist", wishlistRoutes);
 
-app.use(
-  "/api/upload",
-  uploadRoutes
-);
+app.use("/api/orders", orderRoutes);
 
-app.use(
-  "/api/dashboard",
-  dashboardRoutes
-);
-
-app.use(
-  "/api/customers",
-  customerRoutes
-);
-
-/* ==========================================================
-   404 HANDLER
-========================================================== */
+/* ======================================================
+   404 ROUTE
+   IMPORTANT: This MUST be after all API routes.
+====================================================== */
 
 app.use((req, res) => {
   res.status(404).json({
@@ -109,31 +97,8 @@ app.use((req, res) => {
   });
 });
 
-/* ==========================================================
-   GLOBAL ERROR HANDLER
-========================================================== */
-
-app.use(
-  (
-    err: any,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) => {
-    console.error(
-      "Global Error:",
-      err
-    );
-
-    res.status(
-      err.status || 500
-    ).json({
-      success: false,
-      message:
-        err.message ||
-        "Internal Server Error",
-    });
-  }
-);
+/* ======================================================
+   EXPORT APP
+====================================================== */
 
 export default app;
