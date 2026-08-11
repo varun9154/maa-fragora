@@ -46,16 +46,15 @@ title="Customer Favorites"
 
 <ProductCard
 
-key={item.name}
+        key={item.name}
 
-name={item.name}
+        name={item.name}
 
-image={item.image}
+        images={[item.image]}
 
-price={item.price}
+        price={item.price}
 
-oldPrice={item.oldPrice}
-
+        oldPrice={item.oldPrice} id={""} slug={""} category={""} description={""} rating={0} reviews={0} stock={0}
 />
 
 ))}

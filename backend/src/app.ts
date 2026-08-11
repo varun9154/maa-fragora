@@ -31,18 +31,34 @@ app.use(
 );
 
 /* ======================================================
-   SECURITY & GENERAL MIDDLEWARE
+   SECURITY MIDDLEWARE
 ====================================================== */
 
 app.use(helmet());
 
+/* ======================================================
+   COMPRESSION
+====================================================== */
+
 app.use(compression());
 
+/* ======================================================
+   LOGGING
+====================================================== */
+
 app.use(morgan("dev"));
+
+/* ======================================================
+   BODY PARSING
+====================================================== */
 
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
+
+/* ======================================================
+   COOKIE PARSER
+====================================================== */
 
 app.use(cookieParser());
 
@@ -74,19 +90,24 @@ app.get("/api/health", (_req, res) => {
    API ROUTES
 ====================================================== */
 
+/* Authentication */
 app.use("/api/auth", authRoutes);
 
+/* Products */
 app.use("/api/products", productRoutes);
 
+/* Cart */
 app.use("/api/cart", cartRoutes);
 
+/* Wishlist */
 app.use("/api/wishlist", wishlistRoutes);
 
+/* Orders */
 app.use("/api/orders", orderRoutes);
 
 /* ======================================================
    404 ROUTE
-   IMPORTANT: This MUST be after all API routes.
+   MUST BE AFTER ALL API ROUTES
 ====================================================== */
 
 app.use((req, res) => {
