@@ -4,8 +4,12 @@ import {
   createOrder,
   getOrders,
   getOrderById,
+  getOrdersByUser,
+  getMyOrders,
   updateOrderStatus,
 } from "../controllers/orderController";
+
+import { protect } from "../middlewares/authMiddleware";
 
 const router = Router();
 
@@ -19,10 +23,11 @@ router.post(
   createOrder
 );
 
-
 /* ==========================================================
    GET ALL ORDERS
    GET /api/orders
+
+   Used by admin / existing functionality.
 ========================================================== */
 
 router.get(
@@ -30,6 +35,32 @@ router.get(
   getOrders
 );
 
+/* ==========================================================
+   GET MY ORDERS
+   GET /api/orders/my-orders
+
+   IMPORTANT:
+   This route MUST come before /:id.
+========================================================== */
+
+router.get(
+  "/my-orders",
+  protect,
+  getMyOrders
+);
+
+/* ==========================================================
+   GET ORDERS FOR USER
+   GET /api/orders/user/:userId
+
+   Existing compatibility route.
+========================================================== */
+
+router.get(
+  "/user/:userId",
+  protect,
+  getOrdersByUser
+);
 
 /* ==========================================================
    GET SINGLE ORDER
@@ -38,9 +69,9 @@ router.get(
 
 router.get(
   "/:id",
+  protect,
   getOrderById
 );
-
 
 /* ==========================================================
    UPDATE ORDER STATUS

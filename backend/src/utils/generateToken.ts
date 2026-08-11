@@ -1,18 +1,23 @@
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+
 import { env } from "../config/env";
 
-export function generateToken(userId: string): string {
-  const secret: Secret = env.JWT_SECRET;
-
-  const options: SignOptions = {
-    expiresIn: "7d",
-  };
+export const generateToken = (
+  userId: string
+): string => {
+  if (!userId) {
+    throw new Error(
+      "User ID is required to generate token"
+    );
+  }
 
   return jwt.sign(
     {
       id: userId,
     },
-    secret,
-    options
+    env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
   );
-}
+};

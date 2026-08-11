@@ -25,56 +25,85 @@ export default function useCart() {
 
   /*
   |--------------------------------------------------------------------------
+  | Authentication
+  |--------------------------------------------------------------------------
+  */
+
+  const isAuthenticated =
+    typeof window !==
+      "undefined" &&
+    Boolean(
+      localStorage.getItem(
+        "token"
+      )
+    );
+
+  /*
+  |--------------------------------------------------------------------------
   | GET CART
   |--------------------------------------------------------------------------
   */
 
-  const cartQuery = useQuery({
-    queryKey: ["cart"],
+  const cartQuery =
+    useQuery({
+      queryKey: ["cart"],
 
-    queryFn: async () => {
-      const data =
-        await getCart();
+      queryFn: async () => {
+        const data =
+          await getCart();
 
-      if (data?.cart) {
-        const items =
-          data.cart.items?.map(
-            (item: any) => ({
-              id:
-                item.productId?._id,
+        if (data?.cart) {
+          const items =
+            data.cart.items?.map(
+              (item: any) => ({
+                id:
+                  item.productId?._id,
 
-              slug:
-                item.productId?.slug,
+                slug:
+                  item.productId?.slug,
 
-              name:
-                item.productId?.name,
+                name:
+                  item.productId?.name,
 
-              image:
-                item.productId
-                  ?.images?.[0] ||
-                "/images/placeholder.jpg",
-
-              price:
-                Number(
+                image:
                   item.productId
-                    ?.price || 0
-                ),
+                    ?.images?.[0] ||
+                  "",
 
-              quantity:
-                Number(
-                  item.quantity || 1
-                ),
-            })
-          ) ?? [];
+                price:
+                  Number(
+                    item.productId
+                      ?.price || 0
+                  ),
 
-        setCart(items);
-      }
+                quantity:
+                  Number(
+                    item.quantity || 1
+                  ),
+              })
+            ) ?? [];
 
-      return data;
-    },
+          setCart(items);
+        }
 
-    retry: false,
-  });
+        return data;
+      },
+
+      /*
+       * Only call GET /cart when
+       * a token exists.
+       */
+
+      enabled:
+        isAuthenticated,
+
+      /*
+       * Don't repeatedly retry a
+       * failed authentication request.
+       */
+
+      retry: false,
+    });
 
   /*
   |--------------------------------------------------------------------------
@@ -99,7 +128,9 @@ export default function useCart() {
       onSuccess: () => {
         queryClient.invalidateQueries(
           {
-            queryKey: ["cart"],
+            queryKey: [
+              "cart",
+            ],
           }
         );
       },
@@ -128,7 +159,9 @@ export default function useCart() {
       onSuccess: () => {
         queryClient.invalidateQueries(
           {
-            queryKey: ["cart"],
+            queryKey: [
+              "cart",
+            ],
           }
         );
       },
@@ -136,7 +169,7 @@ export default function useCart() {
 
   /*
   |--------------------------------------------------------------------------
-  | REMOVE ITEM
+  | REMOVE CART ITEM
   |--------------------------------------------------------------------------
   */
 
@@ -145,12 +178,16 @@ export default function useCart() {
       mutationFn: (
         productId: string
       ) =>
-        removeCartItem(productId),
+        removeCartItem(
+          productId
+        ),
 
       onSuccess: () => {
         queryClient.invalidateQueries(
           {
-            queryKey: ["cart"],
+            queryKey: [
+              "cart",
+            ],
           }
         );
       },
@@ -168,9 +205,13 @@ export default function useCart() {
         clearCart,
 
       onSuccess: () => {
+        setCart([]);
+
         queryClient.invalidateQueries(
           {
-            queryKey: ["cart"],
+            queryKey: [
+              "cart",
+            ],
           }
         );
       },

@@ -1,178 +1,432 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
 import {
+  Search,
+  Heart,
+  User,
+  ShoppingBag,
   Menu,
   X,
-  ShoppingBag,
-  Heart,
-  Search,
-  User,
 } from "lucide-react";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useCartStore } from "@/store/cartStore";
 
-interface NavLink {
-  name: string;
-  href: string;
-}
-
-const navLinks: NavLink[] = [
-  { name: "Home", href: "/" },
-  { name: "Shop", href: "/shop" },
-  { name: "Collections", href: "/collections" },
-  { name: "About", href: "/about" },
-  { name: "Contact", href: "/contact" },
-];
-
-interface MobileMenuProps {
-  open: boolean;
-  onClose: () => void;
-  links: NavLink[];
-}
-
-function MobileMenu({
-  open,
-  onClose,
-  links,
-}: MobileMenuProps) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden">
-      <div className="absolute right-0 top-0 h-full w-72 bg-[#050505] p-6 shadow-xl">
-        <button
-          onClick={onClose}
-          className="mb-8 inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-3 text-white transition hover:bg-white/10"
-          aria-label="Close menu"
-        >
-          <X size={24} />
-        </button>
-
-        <nav className="flex flex-col gap-5">
-          {navLinks.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className="text-gray-200 transition hover:text-[#D4AF37]"
-              onClick={onClose}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </nav>
-      </div>
-    </div>
-  );
-}
-
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const items = useCartStore((state) => state.items);
+  const cart =
+    useCartStore((state) => state.cart) ?? [];
+
+  const [isLoggedIn, setIsLoggedIn] =
+    useState(false);
+
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
+
+  const [mounted, setMounted] =
+    useState(false);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Check authentication
+  |--------------------------------------------------------------------------
+  */
+
+  const checkAuth = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const token =
+      localStorage.getItem("token");
+
+    setIsLoggedIn(
+      Boolean(token)
+    );
+  };
 
   useEffect(() => {
     setMounted(true);
+
+    checkAuth();
+
+    /*
+     * Re-check when user returns to
+     * this browser tab.
+     */
+
+    const handleFocus = () => {
+      checkAuth();
+    };
+
+    window.addEventListener(
+      "focus",
+      handleFocus
+    );
+
+    return () => {
+      window.removeEventListener(
+        "focus",
+        handleFocus
+      );
+    };
   }, []);
 
-  const totalItems = useMemo(
-    () =>
-      items.reduce(
-        (total, item) => total + item.quantity,
-        0
-      ),
-    [items]
-  );
+  /*
+  |--------------------------------------------------------------------------
+  | Navigation
+  |--------------------------------------------------------------------------
+  */
+
+  const navItems = [
+    {
+      name: "Home",
+      href: "/",
+    },
+    {
+      name: "Shop",
+      href: "/shop",
+    },
+    {
+      name: "Collections",
+      href: "/collections",
+    },
+    {
+      name: "About",
+      href: "/about",
+    },
+    {
+      name: "Contact",
+      href: "/contact",
+    },
+  ];
+
+  /*
+  |--------------------------------------------------------------------------
+  | Account
+  |--------------------------------------------------------------------------
+  */
+
+  const handleAccount = () => {
+    if (!mounted) {
+      return;
+    }
+
+    const token =
+      localStorage.getItem("token");
+
+    if (token) {
+      router.push("/account");
+    } else {
+      router.push(
+        "/login?redirect=/account"
+      );
+    }
+
+    setMobileOpen(false);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Cart
+  |--------------------------------------------------------------------------
+  */
+
+  const handleCart = () => {
+    if (!mounted) {
+      return;
+    }
+
+    const token =
+      localStorage.getItem("token");
+
+    if (token) {
+      router.push("/cart");
+    } else {
+      router.push(
+        "/login?redirect=/cart"
+      );
+    }
+
+    setMobileOpen(false);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Wishlist
+  |--------------------------------------------------------------------------
+  */
+
+  const handleWishlist = () => {
+    if (!mounted) {
+      return;
+    }
+
+    const token =
+      localStorage.getItem("token");
+
+    if (token) {
+      router.push("/wishlist");
+    } else {
+      router.push(
+        "/login?redirect=/wishlist"
+      );
+    }
+
+    setMobileOpen(false);
+  };
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050505]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <header className="sticky top-0 z-[100] border-b border-white/10 bg-[#050505]/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-[76px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          {/* =================================================
+              LOGO
+          ================================================= */}
 
           <Link
             href="/"
-            className="text-3xl font-bold tracking-wide"
+            className="group flex items-center"
           >
-            <span className="text-[#D4AF37]">MAA</span>
-            <span className="text-white">
-              {" "}
-              FRAGORA
-            </span>
+            <div>
+              <div className="text-xl font-bold tracking-[4px] text-white transition group-hover:text-[#D4AF37] sm:text-2xl">
+                MAA FRAGORA
+              </div>
+
+              <div className="hidden text-[8px] tracking-[4px] text-gray-500 sm:block">
+                LUXURY WITHIN REACH
+              </div>
+            </div>
           </Link>
 
+          {/* =================================================
+              DESKTOP NAV
+          ================================================= */}
+
           <nav className="hidden items-center gap-8 lg:flex">
-            {navLinks.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-gray-300 transition hover:text-[#D4AF37]"
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const active =
+                pathname === item.href;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`relative py-2 text-[15px] font-medium transition ${
+                    active
+                      ? "text-[#D4AF37]"
+                      : "text-gray-300 hover:text-[#D4AF37]"
+                  }`}
+                >
+                  {item.name}
+
+                  {active && (
+                    <span className="absolute -bottom-1 left-0 right-0 mx-auto h-[2px] w-5 rounded-full bg-[#D4AF37]" />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="flex items-center gap-5">
+          {/* =================================================
+              DESKTOP ACTIONS
+          ================================================= */}
 
-            <button className="hidden md:block">
-              <Search
-                size={21}
-                className="text-gray-300 hover:text-[#D4AF37]"
-              />
-            </button>
-
-            <Link href="/wishlist">
-              <Heart
-                size={21}
-                className="text-gray-300 hover:text-[#D4AF37]"
-              />
-            </Link>
-
-            <Link href="/account">
-              <User
-                size={21}
-                className="text-gray-300 hover:text-[#D4AF37]"
-              />
-            </Link>
-
-            <Link
-              href="/cart"
-              className="relative"
-            >
-              <ShoppingBag
-                size={22}
-                className="text-gray-300 hover:text-[#D4AF37]"
-              />
-
-              {mounted && totalItems > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#D4AF37] text-xs font-bold text-black">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+          <div className="hidden items-center gap-5 lg:flex">
+            {/* Search */}
 
             <button
-              className="lg:hidden"
-              onClick={() => setOpen(true)}
+              type="button"
+              aria-label="Search"
+              onClick={() =>
+                router.push("/shop")
+              }
+              className="text-gray-300 transition hover:scale-110 hover:text-[#D4AF37]"
             >
-              <Menu
-                size={28}
-                className="text-white"
+              <Search
+                size={22}
+                strokeWidth={1.8}
               />
             </button>
 
+            {/* Wishlist */}
+
+            <button
+              type="button"
+              aria-label="Wishlist"
+              onClick={
+                handleWishlist
+              }
+              className="text-gray-300 transition hover:scale-110 hover:text-[#D4AF37]"
+            >
+              <Heart
+                size={22}
+                strokeWidth={1.8}
+              />
+            </button>
+
+            {/* Account */}
+
+            <button
+              type="button"
+              aria-label="Account"
+              onClick={
+                handleAccount
+              }
+              className={`transition hover:scale-110 hover:text-[#D4AF37] ${
+                isLoggedIn
+                  ? "text-[#D4AF37]"
+                  : "text-gray-300"
+              }`}
+            >
+              <User
+                size={23}
+                strokeWidth={1.8}
+              />
+            </button>
+
+            {/* Cart */}
+
+            <button
+              type="button"
+              aria-label="Shopping cart"
+              onClick={
+                handleCart
+              }
+              className="relative text-gray-300 transition hover:scale-110 hover:text-[#D4AF37]"
+            >
+              <ShoppingBag
+                size={23}
+                strokeWidth={1.8}
+              />
+
+              {cart.length > 0 && (
+                <span className="absolute -right-3 -top-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D4AF37] px-1 text-[10px] font-bold text-black">
+                  {cart.length}
+                </span>
+              )}
+            </button>
           </div>
 
-        </div>
-      </header>
+          {/* =================================================
+              MOBILE BUTTON
+          ================================================= */}
 
-      <MobileMenu
-        open={open}
-        onClose={() => setOpen(false)}
-        links={navLinks}
-      />
+          <button
+            type="button"
+            onClick={() =>
+              setMobileOpen(
+                (previous) =>
+                  !previous
+              )
+            }
+            className="text-gray-300 lg:hidden"
+            aria-label="Open menu"
+          >
+            {mobileOpen ? (
+              <X size={26} />
+            ) : (
+              <Menu size={26} />
+            )}
+          </button>
+        </div>
+
+        {/* ===================================================
+            MOBILE MENU
+        =================================================== */}
+
+        {mobileOpen && (
+          <div className="border-t border-white/10 bg-[#080808] px-5 py-6 lg:hidden">
+            <nav className="flex flex-col">
+              {navItems.map(
+                (item) => {
+                  const active =
+                    pathname ===
+                    item.href;
+
+                  return (
+                    <Link
+                      key={
+                        item.href
+                      }
+                      href={
+                        item.href
+                      }
+                      onClick={() =>
+                        setMobileOpen(
+                          false
+                        )
+                      }
+                      className={`border-b border-white/5 py-4 text-base ${
+                        active
+                          ? "text-[#D4AF37]"
+                          : "text-gray-300"
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  );
+                }
+              )}
+
+              <div className="mt-5 flex items-center justify-around border-t border-white/10 pt-6">
+                <button
+                  onClick={
+                    handleWishlist
+                  }
+                  className="flex flex-col items-center gap-2 text-gray-300"
+                >
+                  <Heart size={21} />
+                  <span className="text-xs">
+                    Wishlist
+                  </span>
+                </button>
+
+                <button
+                  onClick={
+                    handleAccount
+                  }
+                  className="flex flex-col items-center gap-2 text-gray-300"
+                >
+                  <User size={21} />
+                  <span className="text-xs">
+                    Account
+                  </span>
+                </button>
+
+                <button
+                  onClick={
+                    handleCart
+                  }
+                  className="relative flex flex-col items-center gap-2 text-gray-300"
+                >
+                  <ShoppingBag
+                    size={21}
+                  />
+
+                  {cart.length >
+                    0 && (
+                    <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D4AF37] text-[10px] font-bold text-black">
+                      {
+                        cart.length
+                      }
+                    </span>
+                  )}
+
+                  <span className="text-xs">
+                    Cart
+                  </span>
+                </button>
+              </div>
+            </nav>
+          </div>
+        )}
+      </header>
     </>
   );
 }

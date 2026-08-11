@@ -32,14 +32,7 @@ export const createOrder = async (
 ): Promise<void> => {
   try {
     /*
-     * Get logged-in user ID.
-     *
-     * Supports common authentication
-     * structures:
-     *
-     * req.user._id
-     * req.user.id
-     * req.user.userId
+     * Get authenticated user ID.
      */
 
     const authenticatedUserId =
@@ -48,13 +41,8 @@ export const createOrder = async (
       req.user?.userId;
 
     /*
-     * For development compatibility,
-     * allow userId from request body if
-     * authentication middleware has not
-     * yet been connected.
-     *
-     * Once authentication is fully connected,
-     * remove the body fallback.
+     * Fallback to body userId for
+     * existing checkout compatibility.
      */
 
     const userId =
@@ -71,10 +59,13 @@ export const createOrder = async (
       return;
     }
 
+    /*
+     * Validate user ID.
+     */
+
     if (
-      !mongoose.Types.ObjectId.isValid(
-        userId
-      )
+      typeof userId !== "string" ||
+      !mongoose.Types.ObjectId.isValid(userId)
     ) {
       res.status(400).json({
         success: false,
@@ -84,6 +75,10 @@ export const createOrder = async (
       return;
     }
 
+    /*
+     * Request data.
+     */
+
     const {
       items,
       totalAmount,
@@ -92,7 +87,7 @@ export const createOrder = async (
     } = req.body;
 
     /*
-     * Validate items
+     * Validate items.
      */
 
     if (
@@ -109,7 +104,7 @@ export const createOrder = async (
     }
 
     /*
-     * Validate shipping address
+     * Validate shipping address.
      */
 
     if (
@@ -131,18 +126,27 @@ export const createOrder = async (
     }
 
     /*
-     * Validate each product and quantity
+     * Build order items from database products.
      */
 
-    const orderItems = [];
+    const orderItems: any[] = [];
 
     let calculatedTotal = 0;
 
     for (const item of items) {
+      /*
+       * Product ID validation.
+       */
+
+      const productId =
+        typeof item.productId === "string"
+          ? item.productId
+          : "";
+
       if (
-        !item.productId ||
+        !productId ||
         !mongoose.Types.ObjectId.isValid(
-          item.productId
+          productId
         )
       ) {
         res.status(400).json({
@@ -153,6 +157,10 @@ export const createOrder = async (
 
         return;
       }
+
+      /*
+       * Quantity validation.
+       */
 
       const quantity = Number(
         item.quantity
@@ -172,15 +180,12 @@ export const createOrder = async (
       }
 
       /*
-       * Always fetch product from MongoDB.
-       *
-       * Do NOT trust price/name/image sent
-       * from the frontend.
+       * Get product from database.
        */
 
       const product =
         await Product.findById(
-          item.productId
+          productId
         );
 
       if (!product) {
@@ -194,10 +199,13 @@ export const createOrder = async (
       }
 
       /*
-       * Stock validation
+       * Stock validation.
        */
 
-      if (product.stock < quantity) {
+      if (
+        typeof product.stock === "number" &&
+        product.stock < quantity
+      ) {
         res.status(400).json({
           success: false,
           message: `${product.name} has only ${product.stock} item(s) available`,
@@ -207,14 +215,20 @@ export const createOrder = async (
       }
 
       /*
-       * Use database price
+       * Calculate using database price.
        */
 
+      const price =
+        Number(product.price);
+
       const itemTotal =
-        Number(product.price) *
-        quantity;
+        price * quantity;
 
       calculatedTotal += itemTotal;
+
+      /*
+       * Add item.
+       */
 
       orderItems.push({
         productId: product._id,
@@ -222,25 +236,21 @@ export const createOrder = async (
         image:
           product.images?.[0] || "",
         quantity,
-        price: product.price,
+        price,
       });
     }
 
     /*
-     * Prevent frontend price manipulation.
-     *
-     * We calculate the amount ourselves.
+     * Backend calculated total.
      */
 
     const normalizedTotal =
-      Number(calculatedTotal.toFixed(2));
+      Number(
+        calculatedTotal.toFixed(2)
+      );
 
     /*
-     * Optional frontend total comparison.
-     *
-     * Do not fail the order just because
-     * frontend and backend have tiny
-     * floating-point differences.
+     * Warn if frontend total differs.
      */
 
     if (
@@ -253,71 +263,75 @@ export const createOrder = async (
       console.warn(
         "Frontend total differs from backend total",
         {
-          frontendTotal: totalAmount,
-          backendTotal: normalizedTotal,
+          frontendTotal:
+            totalAmount,
+          backendTotal:
+            normalizedTotal,
         }
       );
     }
 
     /*
-     * Create order
+     * Create order.
      */
 
-    const order = await Order.create({
-      userId: new mongoose.Types.ObjectId(
-        userId
-      ),
+    const order =
+      await Order.create({
+        userId:
+          new mongoose.Types.ObjectId(
+            userId
+          ),
 
-      items: orderItems,
+        items:
+          orderItems,
 
-      totalAmount:
-        normalizedTotal,
+        totalAmount:
+          normalizedTotal,
 
-      shippingAddress: {
-        fullName:
-          String(
-            shippingAddress.fullName
-          ).trim(),
+        shippingAddress: {
+          fullName:
+            String(
+              shippingAddress.fullName
+            ).trim(),
 
-        phone:
-          String(
-            shippingAddress.phone
-          ).trim(),
+          phone:
+            String(
+              shippingAddress.phone
+            ).trim(),
 
-        address:
-          String(
-            shippingAddress.address
-          ).trim(),
+          address:
+            String(
+              shippingAddress.address
+            ).trim(),
 
-        city:
-          String(
-            shippingAddress.city
-          ).trim(),
+          city:
+            String(
+              shippingAddress.city
+            ).trim(),
 
-        state:
-          String(
-            shippingAddress.state
-          ).trim(),
+          state:
+            String(
+              shippingAddress.state
+            ).trim(),
 
-        pincode:
-          String(
-            shippingAddress.pincode
-          ).trim(),
-      },
+          pincode:
+            String(
+              shippingAddress.pincode
+            ).trim(),
+        },
 
-      paymentMethod:
-        paymentMethod || "COD",
+        paymentMethod:
+          paymentMethod || "COD",
 
-      paymentStatus:
-        "Pending",
+        paymentStatus:
+          "Pending",
 
-      orderStatus:
-        "Placed",
-    });
+        orderStatus:
+          "Placed",
+      });
 
     /*
-     * Reduce stock only after order
-     * has successfully been created.
+     * Reduce stock.
      */
 
     for (const item of orderItems) {
@@ -325,14 +339,15 @@ export const createOrder = async (
         item.productId,
         {
           $inc: {
-            stock: -item.quantity,
+            stock:
+              -item.quantity,
           },
         }
       );
     }
 
     /*
-     * Populate response
+     * Populate order response.
      */
 
     const populatedOrder =
@@ -352,7 +367,8 @@ export const createOrder = async (
       success: true,
       message:
         "Order placed successfully",
-      order: populatedOrder,
+      order:
+        populatedOrder,
     });
   } catch (error) {
     console.error(
@@ -397,7 +413,8 @@ export const getOrders = async (
 
     res.status(200).json({
       success: true,
-      count: orders.length,
+      count:
+        orders.length,
       orders,
     });
   } catch (error) {
@@ -427,20 +444,46 @@ export const getOrderById = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    /*
+     * Express 5 may type params as
+     * string | string[].
+     */
 
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        id
-      )
-    ) {
+    const rawId = req.params.id;
+
+    const id = Array.isArray(rawId)
+      ? rawId[0]
+      : rawId;
+
+    if (!id) {
       res.status(400).json({
         success: false,
-        message: "Invalid order ID",
+        message:
+          "Order ID is required",
       });
 
       return;
     }
+
+    /*
+     * Validate MongoDB ObjectId.
+     */
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Invalid order ID",
+      });
+
+      return;
+    }
+
+    /*
+     * Find order.
+     */
 
     const order =
       await Order.findById(id)
@@ -456,7 +499,8 @@ export const getOrderById = async (
     if (!order) {
       res.status(404).json({
         success: false,
-        message: "Order not found",
+        message:
+          "Order not found",
       });
 
       return;
@@ -482,7 +526,7 @@ export const getOrderById = async (
 
 /*
 |--------------------------------------------------------------------------
-| GET ORDERS FOR USER
+| GET ORDERS BY USER
 |--------------------------------------------------------------------------
 | GET /api/orders/user/:userId
 |--------------------------------------------------------------------------
@@ -493,7 +537,27 @@ export const getOrdersByUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { userId } = req.params;
+    const rawUserId =
+      req.params.userId;
+
+    const userId =
+      Array.isArray(rawUserId)
+        ? rawUserId[0]
+        : rawUserId;
+
+    if (!userId) {
+      res.status(400).json({
+        success: false,
+        message:
+          "User ID is required",
+      });
+
+      return;
+    }
+
+    /*
+     * Validate user ID.
+     */
 
     if (
       !mongoose.Types.ObjectId.isValid(
@@ -502,15 +566,23 @@ export const getOrdersByUser = async (
     ) {
       res.status(400).json({
         success: false,
-        message: "Invalid user ID",
+        message:
+          "Invalid user ID",
       });
 
       return;
     }
 
+    /*
+     * Find user's orders.
+     */
+
     const orders =
       await Order.find({
-        userId,
+        userId:
+          new mongoose.Types.ObjectId(
+            userId
+          ),
       })
         .populate(
           "items.productId",
@@ -522,7 +594,8 @@ export const getOrdersByUser = async (
 
     res.status(200).json({
       success: true,
-      count: orders.length,
+      count:
+        orders.length,
       orders,
     });
   } catch (error) {
@@ -541,9 +614,114 @@ export const getOrdersByUser = async (
 
 /*
 |--------------------------------------------------------------------------
+| GET MY ORDERS
+|--------------------------------------------------------------------------
+| GET /api/orders/my-orders
+|--------------------------------------------------------------------------
+| Authenticated customer orders.
+|--------------------------------------------------------------------------
+*/
+
+export const getMyOrders = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    /*
+     * Get logged-in user ID.
+     */
+
+    const userId =
+      req.user?._id ||
+      req.user?.id ||
+      req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message:
+          "Authentication required to view your orders",
+      });
+
+      return;
+    }
+
+    /*
+     * Make sure userId is a string.
+     */
+
+    if (typeof userId !== "string") {
+      res.status(400).json({
+        success: false,
+        message:
+          "Invalid authenticated user ID",
+      });
+
+      return;
+    }
+
+    /*
+     * Validate MongoDB ObjectId.
+     */
+
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        userId
+      )
+    ) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Invalid user ID",
+      });
+
+      return;
+    }
+
+    /*
+     * Fetch only this customer's orders.
+     */
+
+    const orders =
+      await Order.find({
+        userId:
+          new mongoose.Types.ObjectId(
+            userId
+          ),
+      })
+        .populate(
+          "items.productId",
+          "name slug images price"
+        )
+        .sort({
+          createdAt: -1,
+        });
+
+    res.status(200).json({
+      success: true,
+      count:
+        orders.length,
+      orders,
+    });
+  } catch (error) {
+    console.error(
+      "Get My Orders Error:",
+      error
+    );
+
+    res.status(500).json({
+      success: false,
+      message:
+        "Unable to fetch your orders",
+    });
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
 | UPDATE ORDER STATUS
 |--------------------------------------------------------------------------
-| PUT /api/orders/:id
+| PUT /api/orders/:id/status
 |--------------------------------------------------------------------------
 */
 
@@ -552,20 +730,52 @@ export const updateOrderStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    /*
+     * Express 5 parameter handling.
+     */
+
+    const rawId = req.params.id;
+
+    const id = Array.isArray(rawId)
+      ? rawId[0]
+      : rawId;
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Order ID is required",
+      });
+
+      return;
+    }
+
+    /*
+     * Accept both:
+     *
+     * {
+     *   orderStatus: "Shipped"
+     * }
+     *
+     * and
+     *
+     * {
+     *   status: "Shipped"
+     * }
+     */
 
     const {
       orderStatus,
       status,
     } = req.body;
 
-    /*
-     * Accept both names for compatibility,
-     * but store only orderStatus.
-     */
-
     const newStatus =
-      orderStatus || status;
+      orderStatus ||
+      status;
+
+    /*
+     * Allowed order statuses.
+     */
 
     const allowedStatuses = [
       "Placed",
@@ -578,6 +788,7 @@ export const updateOrderStatus = async (
     ];
 
     if (
+      typeof newStatus !== "string" ||
       !allowedStatuses.includes(
         newStatus
       )
@@ -592,24 +803,32 @@ export const updateOrderStatus = async (
       return;
     }
 
+    /*
+     * Validate order ID.
+     */
+
     if (
-      !mongoose.Types.ObjectId.isValid(
-        id
-      )
+      !mongoose.Types.ObjectId.isValid(id)
     ) {
       res.status(400).json({
         success: false,
-        message: "Invalid order ID",
+        message:
+          "Invalid order ID",
       });
 
       return;
     }
 
+    /*
+     * Update order.
+     */
+
     const order =
       await Order.findByIdAndUpdate(
         id,
         {
-          orderStatus: newStatus,
+          orderStatus:
+            newStatus,
         },
         {
           new: true,
@@ -628,7 +847,8 @@ export const updateOrderStatus = async (
     if (!order) {
       res.status(404).json({
         success: false,
-        message: "Order not found",
+        message:
+          "Order not found",
       });
 
       return;
@@ -667,20 +887,45 @@ export const cancelOrder = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    /*
+     * Express 5 parameter handling.
+     */
 
-    if (
-      !mongoose.Types.ObjectId.isValid(
-        id
-      )
-    ) {
+    const rawId = req.params.id;
+
+    const id = Array.isArray(rawId)
+      ? rawId[0]
+      : rawId;
+
+    if (!id) {
       res.status(400).json({
         success: false,
-        message: "Invalid order ID",
+        message:
+          "Order ID is required",
       });
 
       return;
     }
+
+    /*
+     * Validate order ID.
+     */
+
+    if (
+      !mongoose.Types.ObjectId.isValid(id)
+    ) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Invalid order ID",
+      });
+
+      return;
+    }
+
+    /*
+     * Find order.
+     */
 
     const order =
       await Order.findById(id);
@@ -688,11 +933,17 @@ export const cancelOrder = async (
     if (!order) {
       res.status(404).json({
         success: false,
-        message: "Order not found",
+        message:
+          "Order not found",
       });
 
       return;
     }
+
+    /*
+     * Prevent cancellation after
+     * shipment has started.
+     */
 
     if (
       [
@@ -711,6 +962,10 @@ export const cancelOrder = async (
 
       return;
     }
+
+    /*
+     * Cancel order.
+     */
 
     order.orderStatus =
       "Cancelled";

@@ -4,35 +4,14 @@ import {
   NextFunction,
 } from "express";
 
-import jwt, {
-  JwtPayload,
-} from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 import { env } from "../config/env";
 
-/*
-|--------------------------------------------------------------------------
-| AUTH REQUEST
-|--------------------------------------------------------------------------
-*/
-
-export interface AuthRequest extends Request {
+export interface AuthRequest
+  extends Request {
   userId?: string;
 }
-
-/*
-|--------------------------------------------------------------------------
-| PROTECT MIDDLEWARE
-|--------------------------------------------------------------------------
-|
-| Checks:
-| 1. Authorization header exists
-| 2. Bearer token exists
-| 3. JWT is valid
-| 4. JWT contains user id
-|
-|--------------------------------------------------------------------------
-*/
 
 export const protect = (
   req: AuthRequest,
@@ -43,91 +22,140 @@ export const protect = (
     const authHeader =
       req.headers.authorization;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Check Authorization Header
-    |--------------------------------------------------------------------------
-    */
+    console.log(
+      "========== AUTH DEBUG =========="
+    );
+
+    console.log(
+      "Authorization exists:",
+      Boolean(authHeader)
+    );
+
+    console.log(
+      "JWT_SECRET exists:",
+      Boolean(env.JWT_SECRET)
+    );
+
+    console.log(
+      "JWT_SECRET length:",
+      env.JWT_SECRET?.length
+    );
 
     if (
       !authHeader ||
-      !authHeader.startsWith("Bearer ")
+      !authHeader.startsWith(
+        "Bearer "
+      )
     ) {
+      console.log(
+        "RESULT: Authorization header missing"
+      );
+
       res.status(401).json({
         success: false,
         message:
-          "Access denied. Please login first.",
+          "Authentication required",
       });
 
       return;
     }
 
+    const token =
+      authHeader
+        .substring(7)
+        .trim();
+
+    console.log(
+      "Token exists:",
+      Boolean(token)
+    );
+
+    console.log(
+      "Token length:",
+      token.length
+    );
+
     /*
-    |--------------------------------------------------------------------------
-    | Extract Token
-    |--------------------------------------------------------------------------
-    */
+     * IMPORTANT:
+     * We do NOT print the actual token.
+     */
 
-    const token = authHeader
-      .split(" ")[1]
-      ?.trim();
+    const decoded =
+      jwt.verify(
+        token,
+        env.JWT_SECRET
+      ) as jwt.JwtPayload;
 
-    if (!token) {
+    console.log(
+      "JWT VERIFIED SUCCESSFULLY"
+    );
+
+    console.log(
+      "Decoded user ID:",
+      decoded.id
+    );
+
+    if (
+      !decoded.id ||
+      typeof decoded.id !==
+        "string"
+    ) {
+      console.log(
+        "RESULT: JWT has no valid user ID"
+      );
+
       res.status(401).json({
         success: false,
         message:
-          "Access denied. Invalid authorization token.",
+          "Invalid authentication token",
       });
 
       return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Verify JWT
-    |--------------------------------------------------------------------------
-    */
+    req.userId =
+      decoded.id;
 
-    const decoded = jwt.verify(
-      token,
-      env.JWT_SECRET
-    ) as JwtPayload;
+    console.log(
+      "Authenticated userId:",
+      req.userId
+    );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Validate User ID
-    |--------------------------------------------------------------------------
-    */
-
-    if (!decoded?.id) {
-      res.status(401).json({
-        success: false,
-        message:
-          "Invalid token. User information missing.",
-      });
-
-      return;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Attach User ID To Request
-    |--------------------------------------------------------------------------
-    */
-
-    req.userId = decoded.id as string;
+    console.log(
+      "================================"
+    );
 
     next();
-  } catch (error) {
-    console.error(
-      "Authentication Error:",
-      error
+  } catch (error: any) {
+    console.log(
+      "========== JWT FAILED =========="
+    );
+
+    console.log(
+      "Error name:",
+      error?.name
+    );
+
+    console.log(
+      "Error message:",
+      error?.message
+    );
+
+    console.log(
+      "================================"
     );
 
     res.status(401).json({
       success: false,
       message:
-        "Invalid or expired token. Please login again.",
+        "Invalid or expired token",
+      debug:
+        process.env.NODE_ENV !==
+        "production"
+          ? error?.message
+          : undefined,
     });
+
+    return;
   }
 };
