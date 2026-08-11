@@ -1,30 +1,42 @@
 import axios from "axios";
 
-const api = axios.create({
-  // In production Vercel will route /api/* to the backend service.
-  // Locally it will use http://localhost:5000/api unless
-  // NEXT_PUBLIC_API_URL is provided.
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:5000/api",
+/**
+ * API Base URL
+ *
+ * Local development:
+ *   http://localhost:5000/api
+ *
+ * Vercel:
+ *   https://maa-fragora-oqjp.vercel.app/api
+ *
+ * The Vercel value is provided through:
+ * NEXT_PUBLIC_API_URL
+ */
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+const api = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-
   withCredentials: true,
 });
 
-/* ======================================================
-   AUTH TOKEN
-====================================================== */
-
+/**
+ * ==========================================================
+ * AUTH TOKEN
+ * ==========================================================
+ *
+ * Adds the JWT token from localStorage to every API request.
+ */
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
 
       if (token) {
+        config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -32,6 +44,24 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+/**
+ * ==========================================================
+ * RESPONSE INTERCEPTOR
+ * ==========================================================
+ *
+ * Handles authentication failures.
+ */
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      console.warn("Authentication required or session expired.");
+    }
+
     return Promise.reject(error);
   }
 );
