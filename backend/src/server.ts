@@ -2,35 +2,42 @@ import app from "./app";
 import { connectDatabase } from "./config/database";
 import { env } from "./config/env";
 
-/* ======================================================
-   SERVER STARTUP
-====================================================== */
+/*
+======================================================
+SERVER STARTUP
+======================================================
+*/
 
-async function startServer() {
+/*
+------------------------------------------------------
+LOCAL DEVELOPMENT
+
+For local development we still:
+
+1. Connect MongoDB
+2. Start Express
+3. Listen on localhost:5000
+
+------------------------------------------------------
+
+VERCEL
+
+Vercel does NOT need app.listen().
+
+Vercel imports the Express app and handles
+the incoming HTTP request.
+------------------------------------------------------
+*/
+
+async function startLocalServer() {
   try {
-    /* ----------------------------------------------
-       Connect to MongoDB
-    ---------------------------------------------- */
-
     await connectDatabase();
 
-    /* ----------------------------------------------
-       Server Port
-       
-       Local:
-       PORT from .env / env.ts
-
-       Vercel:
-       PORT provided by the runtime when applicable
-    ---------------------------------------------- */
-
     const port = Number(
-      process.env.PORT || env.PORT || 5000
+      process.env.PORT ||
+        env.PORT ||
+        5000
     );
-
-    /* ----------------------------------------------
-       Start Express Server
-    ---------------------------------------------- */
 
     app.listen(port, () => {
       console.log(
@@ -39,22 +46,45 @@ async function startServer() {
     });
   } catch (error) {
     console.error(
-      "❌ Server startup failed:",
-      error
+      "❌ Local server startup failed:"
     );
+
+    console.error(error);
 
     process.exit(1);
   }
 }
 
-/* ======================================================
-   START SERVER
-====================================================== */
+/*
+======================================================
+DETECT ENVIRONMENT
+======================================================
+*/
 
-startServer();
+const isVercel =
+  process.env.VERCEL === "1";
 
-/* ======================================================
-   EXPORT APP
-====================================================== */
+/*
+======================================================
+LOCAL SERVER
+======================================================
+*/
+
+if (!isVercel) {
+  startLocalServer();
+}
+
+/*
+======================================================
+VERCEL / EXPRESS EXPORT
+======================================================
+
+Vercel receives the Express application through
+the default export.
+
+MongoDB connection happens through the middleware
+in app.ts when database-dependent routes are called.
+======================================================
+*/
 
 export default app;
