@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 
 interface Product {
-  _id: string;
+  id?: number | string;
+  _id?: string;
   name: string;
   category: string;
   price: number;
@@ -86,7 +87,7 @@ export default function ProductTable({
           {products.map((product) => (
 
             <tr
-              key={product._id}
+              key={String(product.id || product._id)}
               className="border-t border-white/10 hover:bg-[#1a1a1a]"
             >
 
@@ -161,7 +162,7 @@ export default function ProductTable({
 
                   <button
                     onClick={() =>
-                      onDelete(product._id)
+                      onDelete(String(product.id || product._id))
                     }
                     className="rounded-xl bg-red-600 p-2 transition hover:bg-red-700"
                   >

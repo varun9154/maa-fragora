@@ -156,10 +156,10 @@ export default function ShopPage() {
               (product: any) => (
                 <ProductCard
                   key={
-                    product._id
+                    String(product.id || product._id || product.slug)
                   }
                   id={
-                    product._id
+                    String(product.id || product._id || product.slug)
                   }
                   slug={
                     product.slug

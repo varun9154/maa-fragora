@@ -132,13 +132,14 @@ export default function ProductGrid({
 
     <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
 
+
       {filteredProducts.map((product) => (
 
         <ProductCard
 
-          key={product._id}
+          key={String(product.id || product._id || product.slug)}
 
-          id={product._id}
+          id={String(product.id || product._id || product.slug)}
 
           slug={product.slug}
 

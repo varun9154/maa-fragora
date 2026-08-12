@@ -14,7 +14,7 @@ LOCAL DEVELOPMENT
 
 For local development we still:
 
-1. Connect MongoDB
+1. Connect PostgreSQL
 2. Start Express
 3. Listen on localhost:5000
 
@@ -82,7 +82,7 @@ VERCEL / EXPRESS EXPORT
 Vercel receives the Express application through
 the default export.
 
-MongoDB connection happens through the middleware
+The database connection happens through the middleware
 in app.ts when database-dependent routes are called.
 ======================================================
 */

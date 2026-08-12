@@ -1,9 +1,9 @@
-import mongoose from "mongoose";
 import dotenv from "dotenv";
-
-import Product from "../models/Product";
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
+
+const prisma = new PrismaClient();
 
 const products = [
   {
@@ -22,12 +22,12 @@ const products = [
     sku: "MF001",
     brand: "MAA Fragora",
     volume: "100ml",
-    gender: "Men",
+    gender: "MEN",
     notes: {
       top: ["Bergamot", "Lemon"],
       middle: ["Lavender", "Jasmine"],
-      base: ["Oud", "Musk", "Amber"]
-    }
+      base: ["Oud", "Musk", "Amber"],
+    },
   },
   {
     name: "Golden Ember",
@@ -45,12 +45,12 @@ const products = [
     sku: "MF002",
     brand: "MAA Fragora",
     volume: "100ml",
-    gender: "Unisex",
+    gender: "UNISEX",
     notes: {
       top: ["Orange"],
       middle: ["Rose"],
-      base: ["Amber", "Vanilla"]
-    }
+      base: ["Amber", "Vanilla"],
+    },
   },
   {
     name: "Velvet Bloom",
@@ -68,12 +68,12 @@ const products = [
     sku: "MF003",
     brand: "MAA Fragora",
     volume: "100ml",
-    gender: "Women",
+    gender: "WOMEN",
     notes: {
       top: ["Pear"],
       middle: ["Rose"],
-      base: ["Musk"]
-    }
+      base: ["Musk"],
+    },
   },
   {
     name: "Ocean Veil",
@@ -91,12 +91,12 @@ const products = [
     sku: "MF004",
     brand: "MAA Fragora",
     volume: "100ml",
-    gender: "Unisex",
+    gender: "UNISEX",
     notes: {
       top: ["Lemon"],
       middle: ["Sea Notes"],
-      base: ["Musk"]
-    }
+      base: ["Musk"],
+    },
   },
   {
     name: "Imperial Oud",
@@ -114,12 +114,12 @@ const products = [
     sku: "MF005",
     brand: "MAA Fragora",
     volume: "100ml",
-    gender: "Men",
+    gender: "MEN",
     notes: {
       top: ["Saffron"],
       middle: ["Rose"],
-      base: ["Oud", "Leather"]
-    }
+      base: ["Oud", "Leather"],
+    },
   },
   {
     name: "Midnight Aura",
@@ -137,33 +137,42 @@ const products = [
     sku: "MF006",
     brand: "MAA Fragora",
     volume: "100ml",
-    gender: "Unisex",
+    gender: "UNISEX",
     notes: {
       top: ["Black Pepper"],
       middle: ["Patchouli"],
-      base: ["Amber", "Musk"]
-    }
-  }
+      base: ["Amber", "Musk"],
+    },
+  },
 ];
 
 async function seedDatabase() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI!);
+    await prisma.$connect();
 
-    console.log("✅ MongoDB Connected");
+    console.log("✅ PostgreSQL connected");
 
-    await Product.deleteMany();
+    await prisma.product.deleteMany();
 
     console.log("🗑 Old Products Removed");
 
-    await Product.insertMany(products);
+    // Create products one-by-one with proper typing for enums
+    for (const p of products) {
+      await prisma.product.create({
+        data: {
+          ...p,
+          // Prisma enum typing can be strict; cast gender as any
+          gender: (p as any).gender,
+        },
+      });
+    }
 
     console.log("🎉 Products Seeded Successfully");
-
-    process.exit(0);
   } catch (error) {
     console.error(error);
     process.exit(1);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 

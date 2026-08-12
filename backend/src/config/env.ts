@@ -14,22 +14,15 @@ const isProduction =
 
 /*
 ------------------------------------------------------
-MongoDB URI
-------------------------------------------------------
-
-IMPORTANT:
-Do NOT silently fall back to localhost in production.
-
-A Vercel deployment must use MONGODB_URI from
-Vercel Environment Variables.
+Database URL
 ------------------------------------------------------
 */
 
-const mongodbUri = process.env.MONGODB_URI;
+const databaseUrl = process.env.DATABASE_URL;
 
-if (isProduction && !mongodbUri) {
+if (isProduction && !databaseUrl) {
   throw new Error(
-    "❌ MONGODB_URI is missing in the production environment. Please add MONGODB_URI to Vercel Environment Variables."
+    "❌ DATABASE_URL is missing in the production environment. Please add DATABASE_URL to Vercel Environment Variables."
   );
 }
 
@@ -61,14 +54,9 @@ export const env = {
   NODE_ENV:
     process.env.NODE_ENV ?? "development",
 
-  /*
-  Local development can use the local MongoDB
-  fallback, but production MUST use Vercel's
-  MONGODB_URI.
-  */
-  MONGODB_URI:
-    mongodbUri ??
-    "mongodb://127.0.0.1:27017/maa-fragora",
+  DATABASE_URL:
+    databaseUrl ??
+    "postgresql://postgres:postgres@127.0.0.1:5432/maa_fragora",
 
   JWT_SECRET:
     jwtSecret ??

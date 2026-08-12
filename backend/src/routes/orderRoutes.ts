@@ -20,6 +20,7 @@ const router = Router();
 
 router.post(
   "/",
+  protect,
   createOrder
 );
 

@@ -153,10 +153,10 @@ HEALTH CHECK
 ======================================================
 IMPORTANT:
 
-Health endpoint does NOT require MongoDB.
+Health endpoint does NOT require the database connection.
 
 This allows us to check whether Vercel
-is running even when MongoDB is unavailable.
+is running even when the database is unavailable.
 ======================================================
 */
 
@@ -174,8 +174,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 DATABASE MIDDLEWARE
 ======================================================
 
-Every database-dependent API request will make sure
-MongoDB is connected before reaching the route.
+Every database-dependent API request will make sure the database is connected before reaching the route.
 
 This is the important Vercel fix.
 ======================================================
@@ -188,7 +187,7 @@ const databaseMiddleware = async (
 ) => {
   /*
   OPTIONS requests are handled by CORS and do not need
-  a MongoDB connection.
+  a database connection.
   */
 
   if (_req.method === "OPTIONS") {

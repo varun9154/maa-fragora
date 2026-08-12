@@ -1,27 +1,31 @@
 import { Response, NextFunction } from "express";
-import User from "../models/User";
+import { prisma } from "../config/database";
 import { AuthRequest } from "./authMiddleware";
 
 export const adminOnly = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
 ) => {
+  if (!req.userId) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
 
-    const user = await User.findById(req.userId);
+  const user = await prisma.user.findUnique({
+    where: {
+      id: Number(req.userId),
+    },
+  });
 
-    if (!user || user.role !== "admin") {
+  if (!user || user.role !== "ADMIN") {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access required",
+    });
+  }
 
-        return res.status(403).json({
-
-            success: false,
-
-            message: "Admin access required"
-
-        });
-
-    }
-
-    next();
-
+  next();
 };

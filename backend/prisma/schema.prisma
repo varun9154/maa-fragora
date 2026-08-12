@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  MEN
+  WOMEN
+  UNISEX
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  phone      String?
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cart       Cart?
+  wishlist   Wishlist?
+  orders     Order[]
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  name          String
+  slug          String   @unique
+  category      String
+  description   String
+  shortDescription String?
+  images        String[] @default([])
+  price         Float
+  oldPrice      Float?
+  stock         Int      @default(0)
+  featured      Boolean  @default(false)
+  rating        Float    @default(5)
+  reviews       Int      @default(0)
+  sku           String
+  brand         String   @default("MAA Fragora")
+  volume        String   @default("100ml")
+  gender        Gender   @default(UNISEX)
+  notes         Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          Int
+  items           Json
+  totalAmount     Float
+  shippingAddress Json
+  paymentMethod   String   @default("COD")
+  paymentStatus   String   @default("Pending")
+  orderStatus     String   @default("Placed")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int      @unique
+  items     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int      @unique
+  items     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
-import User from "../models/User";
+import { prisma } from "../config/database";
 import { hashPassword, comparePassword } from "../utils/hash";
 import { generateToken } from "../utils/generateToken";
+import { sendRegistrationNotifications } from "../utils/notify";
 
 export const register = async (
   req: Request,
@@ -18,7 +19,9 @@ export const register = async (
       return;
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (existingUser) {
       res.status(400).json({
@@ -30,29 +33,44 @@ export const register = async (
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      phone,
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phone,
+      },
     });
 
-    const token = generateToken(user._id.toString());
-
+    const token = generateToken(String(user.id));
     res.status(201).json({
       success: true,
       message: "Registration successful",
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
       },
     });
+
+    // Notify user by email and (optionally) SMS. Fire-and-forget.
+    (async () => {
+      try {
+        await sendRegistrationNotifications({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+        });
+      } catch (err) {
+        console.error("Registration notification error:", err);
+      }
+    })();
   } catch (error) {
-    console.error(error);
+    console.error("Register Error:", error);
 
     res.status(500).json({
       success: false,
@@ -76,7 +94,9 @@ export const login = async (
       return;
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (!user) {
       res.status(401).json({
@@ -99,14 +119,14 @@ export const login = async (
       return;
     }
 
-    const token = generateToken(user._id.toString());
+    const token = generateToken(String(user.id));
 
     res.json({
       success: true,
       message: "Login successful",
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
@@ -114,7 +134,7 @@ export const login = async (
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login Error:", error);
 
     res.status(500).json({
       success: false,
